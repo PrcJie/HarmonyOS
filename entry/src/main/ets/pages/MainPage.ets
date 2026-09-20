@@ -1,5 +1,6 @@
 import { BottonTabslist } from "../viewmodel/BottonTabsModel"
 import { CommonConstants } from "../common/constants/CommonConstants"
+import { Map } from "../view/MapView"
 
 @Entry
 @Component
@@ -34,11 +35,7 @@ struct MainPage {
     }){
       Tabs({barPosition:BarPosition.End,index : this.bottomTabIndex,controller:this.controller}){
         TabContent(){
-          Column(){
-            Text("地图浏览")
-              .fontSize(16)
-              .textAlign(TextAlign.Start)
-          }
+          Map()
 
         }
         .tabBar(this.Tabbnider(0,"Map"))

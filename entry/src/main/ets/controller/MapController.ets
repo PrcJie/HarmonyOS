@@ -20,10 +20,10 @@ export class MapController {
   calLandmarksPosition(data: AddressItem): void {
     const multiples = this.mapMultiples();
     data.location.forEach((item: Location) => {
-      item.positionX = item.oripositionX * multiples -
-        CommonConstants.MAP_LANDMARKS_SIZE * CommonConstants.MAP_ZOOM_RATIO / CommonConstants.DOUBLE_OR_HALF;
-      item.positionY = item.oripositionY * multiples -
-        CommonConstants.MAP_LANDMARKS_SIZE * CommonConstants.MAP_ZOOM_RATIO;
+      item.positionX = item.originalPositionX * multiples -
+        CommonConstants.MAP_LANDMARKS_SIZE / CommonConstants.DOUBLE_OR_HALF;
+      item.positionY = item.originalPositionY * multiples -
+        CommonConstants.MAP_LANDMARKS_SIZE;
     });
   }
 
