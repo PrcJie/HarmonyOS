@@ -16,6 +16,7 @@ export struct Map {
   @State mapHeight: number = 0;
   @State mapX: number = 0;
   @State mapY: number = 0;
+  @State landmarkData: Array<AddressItem> = [];
   @Provide data: AddressItem = new AddressItem();
 
   aboutToAppear(): void {
@@ -44,6 +45,11 @@ export struct Map {
     this.mapY = Math.min(0, Math.max(this.screenMapHeight - this.mapHeight,
       focusY - (focusY - this.mapY) * scale));
     MapController.calLandmarksPosition(this.data);
+    this.landmarkData.forEach((address: AddressItem) => {
+      MapController.calLandmarksPosition(address);
+    });
+    // AddressItem 不是 @Observed，重新赋值数组以刷新所有地标的位置。
+    this.landmarkData = this.landmarkData.slice();
   }
 
   private doubleTapZoom(centerX: number, centerY: number): void {
@@ -51,6 +57,17 @@ export struct Map {
     const targetScale = currentScale >= Const.MAP_MAX_SCALE ? Const.MAP_MIN_SCALE :
       Math.min(currentScale * Const.MAP_DOUBLE_TAP_SCALE, Const.MAP_MAX_SCALE);
     this.zoomMap(targetScale, centerX, centerY);
+  }
+
+  private loadAllLandmarks(): void {
+    const landmarks: Array<AddressItem> = [];
+    PositionList.forEach((item: PostionItem) => {
+      const address = MapModel.calCoordinateByLonAndLat(item.lngLat, item.type,
+        this.mapWidth, this.mapHeight);
+      MapController.calLandmarksPosition(address);
+      landmarks.push(address);
+    });
+    this.landmarkData = landmarks;
   }
 
   private updateMapSize(width: number, height: number): void {
@@ -91,6 +108,7 @@ export struct Map {
       MapController.calLandmarksPosition(resizedData);
       this.data = resizedData;
     }
+    this.loadAllLandmarks();
     MapController.initLeftTop(this.screenMapWidth, this.mapWidth);
   }
 
@@ -98,23 +116,25 @@ export struct Map {
     Stack({ alignContent: Alignment.Bottom }) {
       Column() {
         Stack({ alignContent: Alignment.TopStart }) {
-          ForEach(this.data.location, (item: Location) => {
-            Image(this.data.icon ?? $r('app.media.ic_location_train'))
-              .width(Const.MAP_LANDMARKS_SIZE)
-              .height(Const.MAP_LANDMARKS_SIZE)
-              .objectFit(ImageFit.Contain)
-              .offset({ x: item.positionX, y: item.positionY })
-            Text(this.data.name ?? '')
-              .fontSize($r('app.float.map_text_size'))
-              .fontColor(this.data.textColor ?? $r('app.color.font_color_black'))
-              .fontWeight(FontWeight.Bold)
-              .offset({
-                x: item.positionX + Const.MAP_TEXT_OFFSET_X,
-                y: item.positionY + Const.MAP_TEXT_OFFSET_Y
-              })
-          }, (item: Location, index: number) =>
-            index.toString() + '_' + item.originalPositionX.toString() + '_' +
-              item.originalPositionY.toString() + '_' + this.data.name?.id.toString())
+          ForEach(this.landmarkData, (address: AddressItem, addressIndex: number) => {
+            ForEach(address.location, (item: Location, locationIndex: number) => {
+              Image(address.icon ?? $r('app.media.ic_location_train'))
+                .width(Const.MAP_LANDMARKS_SIZE)
+                .height(Const.MAP_LANDMARKS_SIZE)
+                .objectFit(ImageFit.Contain)
+                .offset({ x: item.positionX, y: item.positionY })
+              Text(address.name ?? '')
+                .fontSize($r('app.float.map_text_size'))
+                .fontColor(address.textColor ?? $r('app.color.font_color_black'))
+                .fontWeight(FontWeight.Bold)
+                .offset({
+                  x: item.positionX + Const.MAP_TEXT_OFFSET_X,
+                  y: item.positionY + Const.MAP_TEXT_OFFSET_Y
+                })
+            }, (item: Location, locationIndex: number) =>
+              addressIndex.toString() + '_' + locationIndex.toString() + '_' +
+                item.originalPositionX.toString() + '_' + item.originalPositionY.toString())
+          }, (_address: AddressItem, index: number) => index.toString())
         }
         .width(this.mapWidth)
         .height(this.mapHeight)
