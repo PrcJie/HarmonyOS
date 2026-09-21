@@ -8,7 +8,7 @@ struct StarPage {
   private data : Resource[] = []
   private time : number = -1
   @State countdown : number = Const.COUNTDOWN
-  @State showSwiper : boolean = false
+  @State showSwiper : boolean = true
 
   aboutToAppear(): void {
     let  hours = new Date().getHours()

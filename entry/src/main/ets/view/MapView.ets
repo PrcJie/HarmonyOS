@@ -6,9 +6,10 @@ import MapController from '../controller/MapController';
 
 @Component
 export struct Map {
-  private panOption: PanGestureOptions = new PanGestureOptions({ direction: PanDirection.All });
+  private panOption: PanGestureOptions = new PanGestureOptions({ fingers: 1, direction: PanDirection.All });
   private panStartX: number = 0;
   private panStartY: number = 0;
+  private pinchStartScale: number = Const.MAP_MIN_SCALE;
   @State screenMapWidth: number = 0;
   @State screenMapHeight: number = 0;
   @State mapWidth: number = 0;
@@ -18,7 +19,38 @@ export struct Map {
   @Provide data: AddressItem = new AddressItem();
 
   aboutToAppear(): void {
-    MapController.setPinchCount(0);
+    MapController.setMapScale(Const.MAP_MIN_SCALE);
+  }
+
+  private zoomMap(targetScale: number, centerX: number, centerY: number): void {
+    if (this.mapWidth <= 0 || this.mapHeight <= 0 || !Number.isFinite(targetScale)) {
+      return;
+    }
+
+    const oldMultiple = MapController.mapMultiples();
+    MapController.setMapScale(targetScale);
+    const newMultiple = MapController.mapMultiples();
+    const scale = newMultiple / oldMultiple;
+    if (!Number.isFinite(scale) || scale === 1) {
+      return;
+    }
+
+    const focusX = Number.isFinite(centerX) ? centerX : this.screenMapWidth / Const.DOUBLE_OR_HALF;
+    const focusY = Number.isFinite(centerY) ? centerY : this.screenMapHeight / Const.DOUBLE_OR_HALF;
+    this.mapWidth *= scale;
+    this.mapHeight *= scale;
+    this.mapX = Math.min(0, Math.max(this.screenMapWidth - this.mapWidth,
+      focusX - (focusX - this.mapX) * scale));
+    this.mapY = Math.min(0, Math.max(this.screenMapHeight - this.mapHeight,
+      focusY - (focusY - this.mapY) * scale));
+    MapController.calLandmarksPosition(this.data);
+  }
+
+  private doubleTapZoom(centerX: number, centerY: number): void {
+    const currentScale = MapController.getMapScale();
+    const targetScale = currentScale >= Const.MAP_MAX_SCALE ? Const.MAP_MIN_SCALE :
+      Math.min(currentScale * Const.MAP_DOUBLE_TAP_SCALE, Const.MAP_MAX_SCALE);
+    this.zoomMap(targetScale, centerX, centerY);
   }
 
   private updateMapSize(width: number, height: number): void {
@@ -38,8 +70,9 @@ export struct Map {
 
     // 保持底图比例，并确保地图覆盖整个可视区域。
     const scale = Math.max(width / Const.MAP_WIDTH, height / Const.MAP_HEIGHT);
-    this.mapWidth = Const.MAP_WIDTH * scale;
-    this.mapHeight = Const.MAP_HEIGHT * scale;
+    const multiples = MapController.mapMultiples();
+    this.mapWidth = Const.MAP_WIDTH * scale * multiples;
+    this.mapHeight = Const.MAP_HEIGHT * scale * multiples;
     this.mapX = Math.min(0, Math.max(width - this.mapWidth,
       width / Const.DOUBLE_OR_HALF - centerX * this.mapWidth));
     this.mapY = Math.min(0, Math.max(height - this.mapHeight,
@@ -97,17 +130,40 @@ export struct Map {
         this.updateMapSize(Number(newVal.width), Number(newVal.height));
       })
       .gesture(
-        PanGesture(this.panOption)
-          .onActionStart(() => {
-            this.panStartX = this.mapX;
-            this.panStartY = this.mapY;
-          })
-          .onActionUpdate((event: GestureEvent) => {
-            this.mapX = Math.min(0, Math.max(this.screenMapWidth - this.mapWidth,
-              this.panStartX + event.offsetX));
-            this.mapY = Math.min(0, Math.max(this.screenMapHeight - this.mapHeight,
-              this.panStartY + event.offsetY));
-          })
+        GestureGroup(
+          GestureMode.Parallel,
+          PanGesture(this.panOption)
+            .onActionStart(() => {
+              this.panStartX = this.mapX;
+              this.panStartY = this.mapY;
+            })
+            .onActionUpdate((event: GestureEvent) => {
+              this.mapX = Math.min(0, Math.max(this.screenMapWidth - this.mapWidth,
+                this.panStartX + event.offsetX));
+              this.mapY = Math.min(0, Math.max(this.screenMapHeight - this.mapHeight,
+                this.panStartY + event.offsetY));
+            }),
+          PinchGesture({ fingers: Const.MAP_FINGER_COUNT })
+            .onActionStart(() => {
+              this.pinchStartScale = MapController.getMapScale();
+            })
+            .onActionUpdate((event: GestureEvent) => {
+              if (!Number.isFinite(event.scale) || event.scale <= 0) {
+                return;
+              }
+              const accuracy = Math.pow(10, Const.MAP_SCALE_ACCURACY);
+              const targetScale = Math.round(this.pinchStartScale * event.scale * accuracy) / accuracy;
+              this.zoomMap(targetScale, event.pinchCenterX, event.pinchCenterY);
+            }),
+          TapGesture({ count: 2, fingers: 1 })
+            .onAction((event: GestureEvent) => {
+              if (event.fingerList.length === 0) {
+                return;
+              }
+              const touchPoint = event.fingerList[0];
+              this.doubleTapZoom(touchPoint.localX, touchPoint.localY);
+            })
+        )
       )
 
       CustomPanel({

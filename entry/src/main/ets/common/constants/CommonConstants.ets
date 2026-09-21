@@ -215,13 +215,17 @@ export class CommonConstants {
    */
   static MAP_LANDMARKS_LENGTH: number = 10;
   /**
-   * Map Zoom Ratio.
+   * Minimum map scale.
    */
-  static readonly MAP_ZOOM_RATIO: number = 1.1;
+  static readonly MAP_MIN_SCALE: number = 1;
   /**
-   * Maximum number of magnifications.
+   * Maximum map scale.
    */
-  static readonly ZOOM_MAX_TIMES: number = 4;
+  static readonly MAP_MAX_SCALE: number = 4;
+  /**
+   * Scale multiplier for a double tap.
+   */
+  static readonly MAP_DOUBLE_TAP_SCALE: number = 2;
   /**
    * Coordinate dimension.
    */

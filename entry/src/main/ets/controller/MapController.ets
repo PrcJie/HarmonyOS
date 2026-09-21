@@ -7,7 +7,7 @@ const TAG = 'MapController';
 
 export class MapController {
   private leftTop: Array<number> = [0, 0];
-  private pinchCount: number = 0;
+  private mapScale: number = CommonConstants.MAP_MIN_SCALE;
 
   initLeftTop(screenMapWidth: number, mapWidth: number): void {
     this.leftTop = [Math.min(screenMapWidth - mapWidth, 0), 0];
@@ -27,15 +27,20 @@ export class MapController {
     });
   }
 
-  setPinchCount(count: number): void {
-    if (!Number.isFinite(count)) {
-      throw new Error('Invalid zoom count');
+  setMapScale(scale: number): void {
+    if (!Number.isFinite(scale)) {
+      throw new Error('Invalid map scale');
     }
-    this.pinchCount = Math.max(0, Math.min(CommonConstants.ZOOM_MAX_TIMES, Math.round(count)));
+    this.mapScale = Math.max(CommonConstants.MAP_MIN_SCALE,
+      Math.min(CommonConstants.MAP_MAX_SCALE, scale));
+  }
+
+  getMapScale(): number {
+    return this.mapScale;
   }
 
   mapMultiples(): number {
-    return Math.pow(CommonConstants.MAP_ZOOM_RATIO, this.pinchCount);
+    return this.mapScale;
   }
 
   // 在组件中传入 this.getUIContext()，避免从控制器实例获取错误的上下文。
