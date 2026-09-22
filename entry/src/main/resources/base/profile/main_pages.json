@@ -2,6 +2,8 @@
   "src": [
     "pages/Index",
     "pages/MainPage",
-    "view/Mapcoment"
+    "view/Mapcoment",
+    "view/ZonesComponent",
+    "pages/ContentPage"
   ]
 }

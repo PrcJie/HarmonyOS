@@ -1,6 +1,7 @@
 import { BottonTabslist } from "../viewmodel/BottonTabsModel"
 import { CommonConstants } from "../common/constants/CommonConstants"
 import { Map } from "../view/MapView"
+import { Zones } from "../view/ZonesComponent"
 
 @Entry
 @Component
@@ -41,9 +42,7 @@ struct MainPage {
         .tabBar(this.Tabbnider(0,"Map"))
 
         TabContent(){
-          Text("区域导航")
-            .fontSize(16)
-            .textAlign(TextAlign.Start)
+          Zones()
         }
         .tabBar(this.Tabbnider(1,"Zone"))
 
