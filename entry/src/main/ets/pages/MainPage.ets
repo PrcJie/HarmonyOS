@@ -2,6 +2,7 @@ import { BottonTabslist } from "../viewmodel/BottonTabsModel"
 import { CommonConstants } from "../common/constants/CommonConstants"
 import { Map } from "../view/MapView"
 import { Zones } from "../view/ZonesComponent"
+import { Trains } from "../view/TrainsComponent"
 
 @Entry
 @Component
@@ -47,9 +48,7 @@ struct MainPage {
         .tabBar(this.Tabbnider(1,"Zone"))
 
         TabContent(){
-          Text("园区火车")
-            .fontSize(16)
-            .textAlign(TextAlign.Start)
+          Trains()
         }
         .tabBar(this.Tabbnider(2,"Train"))
 

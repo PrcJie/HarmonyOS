@@ -81,7 +81,7 @@ export class CommonConstants {
   /**
    * The end time of the line 2.
    */
-  static readonly LINE_TWO_END_TIME: string = "18:32";
+  static readonly LINE_TWO_END_TIME: string = "19:00";
   /**
    * The weekday start time of the line 3.
    */
@@ -89,15 +89,15 @@ export class CommonConstants {
   /**
    * The weekday end time of the line 3.
    */
-  static readonly LINE_THREE_END_TIME: string = "17:55";
+  static readonly LINE_THREE_END_TIME: string = "18:00";
   /**
    * The weekend start time of the line 3.
    */
-  static readonly LINE_THREE_WEEKEND_START_TIME: string = "07:57";
+  static readonly LINE_THREE_WEEKEND_START_TIME: string = "08:00";
   /**
    * The weekend end time of the line 3.
    */
-  static readonly LINE_THREE_WEEKEND_END_TIME: string = "18:30";
+  static readonly LINE_THREE_WEEKEND_END_TIME: string = "19:00";
   /**
    * Content page url.
    */

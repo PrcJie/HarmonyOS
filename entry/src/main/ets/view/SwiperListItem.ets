@@ -6,6 +6,7 @@ export default struct SwiperListItem {
   private swiperController: SwiperController = new SwiperController();
   private zonesList: ZonesItem[] = ZonesViewModel.getZonesList();
   @Prop imageHeight: number = 100;
+  @Prop viewportHeight: number = 640;
   @Link currentZonesId: number;
   @Prop arrowIconOpacity: number = 1;
   @Consume('contentData') contentData: ZonesItem;
@@ -16,7 +17,7 @@ export default struct SwiperListItem {
         ForEach(this.zonesList, (item: ZonesItem) => {
           Image(item.swiperPic)
             .width('100%')
-            .height(`${this.imageHeight}%`)
+            .height('100%')
             .objectFit(ImageFit.Cover)
         }, (item: ZonesItem) => item.id.toString())
       }
@@ -62,8 +63,7 @@ export default struct SwiperListItem {
       .padding({ left: 12, right: 12 })
     }
     .width('100%')
-    .height(240)
-    .borderRadius(16)
+    .height(Math.max(1, this.viewportHeight * this.imageHeight / 100))
     .clip(true)
   }
 }
