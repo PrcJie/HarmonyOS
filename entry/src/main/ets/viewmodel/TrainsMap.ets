@@ -1,4 +1,5 @@
-export enum TrainsList {
+// 线路、背景图、发车间隔和沿线坐标。
+export enum TrainsLine {
   LINE_ONE = 0,
   LINE_TWO = 1,
   LINE_THREE = 2
@@ -11,7 +12,7 @@ export class Position {
 
 @Observed
 export class TrainsMap {
-  imgBg: ResourceStr = $r('app.media.ic_line1');
+  imgBg: Resource = $r('app.media.ic_line1');
   interval: number = 0;
-  lineData: Position[] = [];
+  lineData: Array<Position> = [];
 }

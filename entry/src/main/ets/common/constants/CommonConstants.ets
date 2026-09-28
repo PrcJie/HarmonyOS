@@ -95,6 +95,10 @@ export class CommonConstants {
    */
   static readonly LINE_THREE_WEEKEND_START_TIME: string = "08:00";
   /**
+   * The position reference time of line 3 on weekends.
+   */
+  static readonly LINE_THREE_WEEKEND_POSITION_START_TIME: string = "07:57";
+  /**
    * The weekend end time of the line 3.
    */
   static readonly LINE_THREE_WEEKEND_END_TIME: string = "19:00";
