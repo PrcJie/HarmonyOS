@@ -1,6 +1,12 @@
 import router from '@ohos.router';
+import { AMapPrivacyAgreeStatus, AMapPrivacyInfoStatus, AMapPrivacyShowStatus } from '@amap/amap_lbs_common';
+import { CameraPosition, MapsInitializer } from '@amap/amap_lbs_map3d';
 import { Campus } from '../common/Campus';
+import { AMAP_HARMONY_KEY } from '../common/CampusMapConfig';
 import { CampusPlace, campusPlaces } from '../viewmodel/CampusPlace';
+import { Campus3DMapView } from './Campus3DMapView';
+
+let amapPrivacyAccepted: boolean = false;
 
 @Component
 export struct Map {
@@ -9,6 +15,8 @@ export struct Map {
   private panStartX: number = 0;
   private panStartY: number = 0;
   private pinchStartScale: number = 1;
+  private last3DCamera?: CameraPosition;
+  private last3DPlaceIndex: number = 0;
 
   @State private screenMapWidth: number = 0;
   @State private screenMapHeight: number = 0;
@@ -20,6 +28,8 @@ export struct Map {
   @State private selectedPlaceIndex: number = 0;
   @State private panelExpanded: boolean = true;
   @State private searchMessage: string = '';
+  @State private is3D: boolean = false;
+  @State private showMapPrivacy: boolean = false;
 
   aboutToAppear(): void {
     if (this.initialPlaceId !== 0) {
@@ -44,9 +54,33 @@ export struct Map {
 
   private selectPlace(index: number): void {
     this.selectedPlaceIndex = index;
-    this.focusPlace(index);
+    if (!this.is3D) {
+      this.focusPlace(index);
+    }
     this.panelExpanded = false;
     this.searchMessage = '';
+  }
+
+  private toggleMapMode(): void {
+    if (this.is3D) {
+      this.last3DPlaceIndex = this.selectedPlaceIndex;
+      this.is3D = false;
+    } else if (amapPrivacyAccepted) {
+      this.is3D = true;
+    } else {
+      this.showMapPrivacy = true;
+    }
+  }
+
+  private acceptMapPrivacy(): void {
+    const context: Context = getContext(this);
+    MapsInitializer.updatePrivacyShow(AMapPrivacyShowStatus.DidShow,
+      AMapPrivacyInfoStatus.DidContain, context);
+    MapsInitializer.updatePrivacyAgree(AMapPrivacyAgreeStatus.DidAgree, context);
+    MapsInitializer.setApiKey(AMAP_HARMONY_KEY);
+    amapPrivacyAccepted = true;
+    this.showMapPrivacy = false;
+    this.is3D = true;
   }
 
   private openSelectedZone(): void {
@@ -118,7 +152,20 @@ export struct Map {
 
   build() {
     Stack({ alignContent: Alignment.Bottom }) {
-      Column() {
+      if (this.is3D) {
+        Campus3DMapView({
+          selectedPlaceIndex: this.selectedPlaceIndex,
+          initialCamera: this.last3DCamera,
+          keepSavedTarget: this.last3DPlaceIndex === this.selectedPlaceIndex,
+          onPlaceSelected: (index: number): void => this.selectPlace(index),
+          onCameraChanged: (position: CameraPosition): void => {
+            this.last3DCamera = position;
+          }
+        })
+          .width('100%')
+          .height('100%')
+      } else {
+        Column() {
         Stack({ alignContent: Alignment.TopStart }) {
           Image($rawfile('campus_map.png'))
             .width(this.mapWidth)
@@ -196,6 +243,16 @@ export struct Map {
             })
         )
       )
+      }
+
+      Button(this.is3D ? '2D' : '3D')
+        .width(58)
+        .height(38)
+        .fontSize(15)
+        .fontWeight(FontWeight.Bold)
+        .backgroundColor('#165A82')
+        .position({ x: Math.max(12, this.screenMapWidth - 70), y: 12 })
+        .onClick(() => this.toggleMapMode())
 
       Column() {
         Row() {
@@ -270,6 +327,44 @@ export struct Map {
       .width('100%')
       .backgroundColor('#F8FBFD')
       .borderRadius({ topLeft: 14, topRight: 14 })
+
+      if (this.showMapPrivacy) {
+        Stack({ alignContent: Alignment.Center }) {
+          Column({ space: 12 }) {
+            Text('开启高德 3D 地图')
+              .fontSize(18)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#172B3B')
+            Text('3D 地图由北京高德图强科技有限公司提供。加载地图时，其地图 SDK 会处理提供服务所需的设备和地图使用信息。请阅读高德地图开放平台隐私权政策，再决定是否开启。')
+              .fontSize(13)
+              .lineHeight(21)
+              .fontColor('#4E5F6D')
+            Hyperlink('https://lbs.amap.com/pages/privacy/', '查看高德地图开放平台隐私权政策')
+              .color('#165A82')
+            Row({ space: 12 }) {
+              Button('取消')
+                .layoutWeight(1)
+                .backgroundColor('#E9EFF3')
+                .fontColor('#223D4F')
+                .onClick(() => {
+                  this.showMapPrivacy = false;
+                })
+              Button('同意并开启')
+                .layoutWeight(1)
+                .backgroundColor('#165A82')
+                .onClick(() => this.acceptMapPrivacy())
+            }
+            .width('100%')
+          }
+          .padding(20)
+          .width('88%')
+          .borderRadius(14)
+          .backgroundColor(Color.White)
+        }
+        .width('100%')
+        .height('100%')
+        .backgroundColor('#66000000')
+      }
     }
     .width('100%')
     .height('100%')

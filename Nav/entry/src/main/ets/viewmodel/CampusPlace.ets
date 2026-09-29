@@ -13,7 +13,7 @@ export interface CampusPlace {
 }
 
 // 点位对应校方平面图上的建筑与出入口，mapX/mapY 的单位是原图像素。
-// 中心与北门使用已知 GCJ-02 坐标。
+// 中心与北门使用已知 GCJ-02 坐标；其他经纬度按校区轮廓和示意图估算，待实地核准。
 export const campusPlaces: Array<CampusPlace> = [
   {
     id: 0,
@@ -42,7 +42,9 @@ export const campusPlaces: Array<CampusPlace> = [
     description: '校园东侧出入口',
     mapX: 864,
     mapY: 704,
-    icon: $rawfile('ic_home.png')
+    icon: $rawfile('ic_home.png'),
+    latitude: 34.3659,
+    longitude: 109.1894
   },
   {
     id: 3,
@@ -50,7 +52,9 @@ export const campusPlaces: Array<CampusPlace> = [
     description: '校园东南侧出入口',
     mapX: 847,
     mapY: 1344,
-    icon: $rawfile('ic_home.png')
+    icon: $rawfile('ic_home.png'),
+    latitude: 34.3611,
+    longitude: 109.1894
   },
   {
     id: 4,
@@ -59,7 +63,9 @@ export const campusPlaces: Array<CampusPlace> = [
     mapX: 558,
     mapY: 722,
     icon: $rawfile('ic_library.png'),
-    zoneId: 1
+    zoneId: 1,
+    latitude: 34.3658,
+    longitude: 109.1864
   },
   {
     id: 5,
@@ -67,7 +73,9 @@ export const campusPlaces: Array<CampusPlace> = [
     description: '校园东侧运动场',
     mapX: 804,
     mapY: 1125,
-    icon: $rawfile('ic_gymnasium.png')
+    icon: $rawfile('ic_gymnasium.png'),
+    latitude: 34.3627,
+    longitude: 109.1884
   },
   {
     id: 6,
@@ -76,6 +84,8 @@ export const campusPlaces: Array<CampusPlace> = [
     mapX: 710,
     mapY: 918,
     icon: $rawfile('ic_building.png'),
-    zoneId: 2
+    zoneId: 2,
+    latitude: 34.3643,
+    longitude: 109.1876
   }
 ];
