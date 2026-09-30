@@ -3,11 +3,13 @@ import { CommonConstants } from '../common/constants/CommonConstants';
 import { Position, TrainsLine, TrainsMap } from '../viewmodel/TrainsMap';
 import trainsMapModel from '../viewmodel/TrainsMapModel';
 
-/** 将线路底图和按班次推算的列车位置绘制在同一坐标系中。 */
+/** 底图跟随列车移动，箭头和列车标记绘制在其上方。 */
 @Component
 export struct TrainsTrack {
   private setting: RenderingContextSettings = new RenderingContextSettings(true);
   private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.setting);
+  private trainSetting: RenderingContextSettings = new RenderingContextSettings(true);
+  private contextTrainLine: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.trainSetting);
 
   @Prop trainsInfo: TrainsMap = new TrainsMap();
   @Prop trainLine: number = TrainsLine.LINE_ONE;
@@ -16,17 +18,20 @@ export struct TrainsTrack {
   private imgTrain: ImageBitmap | undefined = undefined;
   private imgCircle: ImageBitmap | undefined = undefined;
   private pixelMaps: Array<image.PixelMap> = [];
-  private canvasWidth: number = 0;
-  private canvasHeight: number = 0;
-  private canvasReady: boolean = false;
+  @State private canvasWidth: number = 0;
+  @State private canvasHeight: number = 0;
+  private backgroundReady: boolean = false;
+  private trainLayerReady: boolean = false;
   private intervalId: number = -1;
 
   private sumDistance: number = 0;
   private delay: number = 0;
   private currentIndex: number = 0;
-  private trainX: number = 0;
-  private trainY: number = 0;
-  private rotateAngle: number = 0;
+  @State private trainX: number = 0;
+  @State private trainY: number = 0;
+  @State private bgX: number = 0;
+  @State private bgY: number = 0;
+  @State private rotateAngle: number = CommonConstants.INIT_ROTATE_ANGLE;
   private positionStart: Position = new Position();
   private positionEnd: Position = new Position();
 
@@ -38,12 +43,16 @@ export struct TrainsTrack {
     this.sumDistance = trainsMapModel.calDistance(this.trainsInfo.lineData);
     this.delay = trainsMapModel.calDelay(this.sumDistance, this.trainLine);
     this.fetchStartPosition();
+  }
+
+  private startAnimation(): void {
+    if (!this.backgroundReady || !this.trainLayerReady || this.intervalId !== -1) {
+      return;
+    }
+    this.drawTrainPosition();
     if (this.delay > 0) {
       const refreshMs = Math.max(16, Math.min(50, this.delay));
-      this.intervalId = setInterval(() => {
-        this.fetchStartPosition();
-        this.drawTrack();
-      }, refreshMs);
+      this.intervalId = setInterval(() => this.drawTrainPosition(), refreshMs);
     }
   }
 
@@ -65,6 +74,8 @@ export struct TrainsTrack {
       pixelMap.release();
     });
     this.pixelMaps = [];
+    this.backgroundReady = false;
+    this.trainLayerReady = false;
   }
 
   private loadImageBitmap(res: Resource): ImageBitmap | undefined {
@@ -123,53 +134,96 @@ export struct TrainsTrack {
     // 小火车图片默认朝上，线路角度以向右为 0 度。
     const direction = trainsMapModel.fetchDirection(this.positionStart.x, this.positionStart.y,
       this.positionEnd.x, this.positionEnd.y);
-    this.rotateAngle = (direction + 90) * Math.PI / 180;
+    this.rotateAngle = CommonConstants.BASIC_ROTATE_ANGLE + direction;
   }
 
-  private drawTrack(): void {
-    if (!this.canvasReady || this.canvasWidth <= 0 || this.canvasHeight <= 0) {
+  /** 将列车尽量保持在视窗中心，并限制地图不露出边界。 */
+  private calcPosition(x: number, y: number, width: number, height: number): void {
+    const mapWidth = CommonConstants.CANVAS_WIDTH;
+    const mapHeight = CommonConstants.CANVAS_HEIGHT;
+    this.bgX = width >= mapWidth ? (width - mapWidth) / 2 :
+      Math.max(width - mapWidth, Math.min(0, width / 2 - x));
+    this.bgY = height >= mapHeight ? (height - mapHeight) / 2 :
+      Math.max(height - mapHeight, Math.min(0, height / 2 - y));
+  }
+
+  private drawTrainPosition(): void {
+    if (!this.backgroundReady || !this.trainLayerReady ||
+      this.canvasWidth <= 0 || this.canvasHeight <= 0) {
       return;
     }
-    const scaleX = this.canvasWidth / CommonConstants.CANVAS_WIDTH;
-    const scaleY = this.canvasHeight / CommonConstants.CANVAS_HEIGHT;
-    const x = this.trainX * scaleX;
-    const y = this.trainY * scaleY;
+    this.fetchStartPosition();
+    this.calcPosition(this.trainX, this.trainY, this.canvasWidth, this.canvasHeight);
+    const x = this.trainX + this.bgX;
+    const y = this.trainY + this.bgY;
+
     this.context.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
     if (this.imgBgBitmap !== undefined) {
-      this.context.drawImage(this.imgBgBitmap, 0, 0, this.canvasWidth, this.canvasHeight);
+      this.context.drawImage(this.imgBgBitmap, this.bgX, this.bgY,
+        CommonConstants.CANVAS_WIDTH, CommonConstants.CANVAS_HEIGHT);
     }
+
+    this.contextTrainLine.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
     if (this.imgCircle !== undefined) {
-      this.context.drawImage(this.imgCircle,
-        x - CommonConstants.CIRCLE_OFFSET_X * scaleX,
-        y - CommonConstants.CIRCLE_OFFSET_Y * scaleY,
-        CommonConstants.CIRCLE_WIDTH * scaleX,
-        CommonConstants.CIRCLE_HEIGHT * scaleY);
+      this.contextTrainLine.save();
+      this.contextTrainLine.globalAlpha = 0.3;
+      this.contextTrainLine.drawImage(this.imgCircle,
+        x - CommonConstants.CIRCLE_OFFSET_X,
+        y - CommonConstants.CIRCLE_OFFSET_Y,
+        CommonConstants.CIRCLE_WIDTH,
+        CommonConstants.CIRCLE_HEIGHT);
+      this.contextTrainLine.restore();
     }
     if (this.imgTrain !== undefined) {
-      this.context.save();
-      this.context.translate(x, y);
-      this.context.rotate(this.rotateAngle);
-      this.context.drawImage(this.imgTrain,
-        -CommonConstants.TRAIN_OFFSET_X * scaleX,
-        -CommonConstants.TRAIN_OFFSET_Y * scaleY,
-        CommonConstants.TRAIN_WIDTH * scaleX,
-        CommonConstants.TRAIN_HEIGHT * scaleY);
-      this.context.restore();
+      this.contextTrainLine.drawImage(this.imgTrain,
+        x - CommonConstants.TRAIN_OFFSET_X,
+        y - CommonConstants.TRAIN_OFFSET_Y,
+        CommonConstants.TRAIN_WIDTH,
+        CommonConstants.TRAIN_HEIGHT);
     }
   }
 
   build() {
-    Canvas(this.context)
+    Stack({ alignContent: Alignment.TopStart }) {
+      // 位图加载失败时仍显示该线路的静态底图。
+      Image(this.trainsInfo.imgBg)
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+
+      Canvas(this.context)
+        .width('100%')
+        .height('100%')
+        .onReady(() => {
+          this.backgroundReady = true;
+          this.startAnimation();
+        })
+
+      Image($r('app.media.ic_train_arrow'))
+        .width(CommonConstants.ARROW_WIDTH)
+        .height(CommonConstants.ARROW_HEIGHT)
+        .position({
+          x: this.trainX + this.bgX - CommonConstants.ARROW_OFFSET_X,
+          y: this.trainY + this.bgY - CommonConstants.ARROW_OFFSET_Y
+        })
+        .rotate({ x: 0, y: 0, z: 1, angle: this.rotateAngle })
+
+      Canvas(this.contextTrainLine)
+        .width('100%')
+        .height('100%')
+        .onReady(() => {
+          this.trainLayerReady = true;
+          this.startAnimation();
+        })
+    }
       .width('100%')
-      .height('100%')
-      .onReady(() => {
-        this.canvasReady = true;
-        this.drawTrack();
-      })
+      .aspectRatio(CommonConstants.CANVAS_ASPECT_RADIO)
+      .borderRadius(CommonConstants.CANVAS_BORDER_RADIUS)
+      .clip(true)
       .onAreaChange((_oldVal: Area, newVal: Area) => {
         this.canvasWidth = Number(newVal.width);
         this.canvasHeight = Number(newVal.height);
-        this.drawTrack();
+        this.drawTrainPosition();
       })
   }
 }

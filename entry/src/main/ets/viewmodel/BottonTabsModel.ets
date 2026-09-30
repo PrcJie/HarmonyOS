@@ -18,6 +18,6 @@ export const BottonTabslist : Array<BottonTabsItems>=[
   {
     icon : $r("app.media.ic_user"),
     iconSelected : $r("app.media.ic_user_selected"),
-    text : $r("app.string.bottom_text_users")
+    text : $r("app.string.bottom_text_campus")
   }
 ]

@@ -139,11 +139,6 @@ export struct Trains {
             .height('100%')
             .objectFit(ImageFit.Cover)
 
-          if (this.selectedLine >= 0 && this.isOperating(this.selectedLine)) {
-            ForEach([this.selectedLine], (line: number) => {
-              TrainsTrack({ trainsInfo: this.trainsMapData[line], trainLine: line })
-            }, (line: number) => line.toString())
-          }
         }
           .width('100%')
           .aspectRatio(1.75)
@@ -185,6 +180,7 @@ export struct Trains {
 
                 if (this.fetchShowMap(index) && this.isOperating(index)) {
                   Column({ space: 6 }) {
+                    TrainsTrack({ trainsInfo: item, trainLine: index })
                     Text(`按班次推算的列车位置：已行驶约${this.progress(index)}%`)
                       .fontSize(14)
                       .fontColor('#34404C')

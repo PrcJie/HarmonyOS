@@ -3,6 +3,7 @@ import { CommonConstants } from "../common/constants/CommonConstants"
 import { Map } from "../view/MapView"
 import { Zones } from "../view/ZonesComponent"
 import { Trains } from "../view/TrainsComponent"
+import { CampusInfoPage } from "../view/CampusInfoPage"
 
 @Entry
 @Component
@@ -35,43 +36,58 @@ struct MainPage {
     Flex({
       direction : FlexDirection.Column,alignItems:ItemAlign.End,justifyContent:FlexAlign.End
     }){
-      Tabs({barPosition:BarPosition.End,index : this.bottomTabIndex,controller:this.controller}){
-        TabContent(){
-          Map()
+      Column() {
+        if (this.selectedTabIndex === 3) {
+          Row() {
+            Text('校区信息')
+              .fontSize(19)
+              .fontWeight(FontWeight.Medium)
+              .fontColor('#172B3B')
+          }
+          .width('100%')
+          .height(56)
+          .justifyContent(FlexAlign.Center)
+          .backgroundColor('#F8FBFD')
+        }
+
+        Tabs({barPosition:BarPosition.End,index : this.bottomTabIndex,controller:this.controller}){
+          TabContent(){
+            Map()
+
+          }
+          .tabBar(this.Tabbnider(0,"Map"))
+
+          TabContent(){
+            Zones()
+          }
+          .tabBar(this.Tabbnider(1,"Zone"))
+
+          TabContent(){
+            Trains()
+          }
+          .tabBar(this.Tabbnider(2,"Train"))
+
+          TabContent(){
+            CampusInfoPage()
+          }
+          .tabBar(this.Tabbnider(3,"Campus"))
 
         }
-        .tabBar(this.Tabbnider(0,"Map"))
-
-        TabContent(){
-          Zones()
-        }
-        .tabBar(this.Tabbnider(1,"Zone"))
-
-        TabContent(){
-          Trains()
-        }
-        .tabBar(this.Tabbnider(2,"Train"))
-
-        TabContent(){
-          Text("个人信息")
-            .fontSize(16)
-            .textAlign(TextAlign.Start)
-        }
-        .tabBar(this.Tabbnider(3,"User"))
-
+        .width("100%")
+        .layoutWeight(1)
+        .vertical(false)
+        .scrollable(false)
+        .barHeight(CommonConstants.BAR_HEIGHT)
+        .onAnimationStart((_index:number, targetIndex:number) =>{
+          this.selectedTabIndex = targetIndex
+        })
+        .onChange((index:number) =>{
+          this.bottomTabIndex = index
+          this.selectedTabIndex = index
+        })
       }
-      .width("100%")
-      .height("100%")
-      .vertical(false)
-      .scrollable(false)
-      .barHeight(CommonConstants.BAR_HEIGHT)
-      .onAnimationStart((_index:number, targetIndex:number) =>{
-        this.selectedTabIndex = targetIndex
-      })
-      .onChange((index:number) =>{
-        this.bottomTabIndex = index
-        this.selectedTabIndex = index
-      })
+      .width('100%')
+      .height('100%')
     }
   }
 }
